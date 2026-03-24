@@ -31,7 +31,7 @@ exports.getUserDesigns = async (req, res) => {
 exports.getUserDesignsbyId = async (req, res) => {
   try {
       //get the user Id
-      //get the id of the particular desing being requested for
+      //get the id of the particular Design being requested for
       //find the particular design requested by user, using findone
       //if not desig present retuen 404 status
       //return res.status 200, success as true if the design is found

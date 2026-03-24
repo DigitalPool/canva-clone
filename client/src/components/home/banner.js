@@ -17,7 +17,7 @@ export default function Banner() {
             setloading(true)
 
             const initialDesignData = {
-                name: 'Untitled Desing - Youtube Thumbnail',
+                name: 'Untitled Design - Youtube Thumbnail',
                 canvasData: null,
                 width: 825,
                 height: 7465,

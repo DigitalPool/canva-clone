@@ -1055,7 +1055,7 @@ exports.getUserDesigns = async (req, res) => {
 exports.getUserDesignsbyId = async (req, res) => {
   try {
     //get the user Id
-    //get the id of the particular desing being requested for
+    //get the id of the particular Design being requested for
     //find the particular design requested by user, using findone
     //if not desig present retuen 404 status
     //return res.status 200, success as true if the design is found
@@ -1501,7 +1501,7 @@ function MainEditor() {
     setError(null)
   }, [designId]) //it is based on the changing od designId
 
-  //it is possible that the desing is loaded and the canvas is not ready from the canvas
+  //it is possible that the Design is loaded and the canvas is not ready from the canvas
 
   useEffect(() => {
     if (isLoading && !canvas && designId){
@@ -1792,7 +1792,7 @@ function MainEditor() {
     setError(null)
   }, [designId]) //it is based on the changing od designId
 
-  //it is possible that the desing is loaded and the canvas is not ready from the canvas
+  //it is possible that the Design is loaded and the canvas is not ready from the canvas
 
   useEffect(() => {
     if (isLoading && !canvas && designId){
@@ -1872,7 +1872,7 @@ canvasData : null
 category : "youtube_thumbnail"
 createdAt : "2026-03-07T12:36:46.460Z"
 height : 7465
-name : "Untitled Desing - Youtube Thumbnail"
+name : "Untitled Design - Youtube Thumbnail"
 updatedAt : "2026-03-07T12:36:46.460Z"
 userId : "108003755833105714734"
 width : 825
@@ -1933,7 +1933,7 @@ function MainEditor() {
     setError(null)
   }, [designId]) //it is based on the changing od designId
 
-  //it is possible that the desing is loaded and the canvas is not ready from the canvas
+  //it is possible that the Design is loaded and the canvas is not ready from the canvas
 
   useEffect(() => {
     if (isLoading && !canvas && designId){
@@ -1973,7 +1973,7 @@ function MainEditor() {
       // category : "youtube_thumbnail"
       // createdAt : "2026-03-07T12:36:46.460Z"
       // height : 7465
-      // name : "Untitled Desing - Youtube Thumbnail"
+      // name : "Untitled Design - Youtube Thumbnail"
       // updatedAt : "2026-03-07T12:36:46.460Z"
       // userId : "108003755833105714734"
       // width : 825
@@ -2104,12 +2104,92 @@ Now we will design css that we will be using in the app/global.css
 
 ***************************************************************************
 
-Now its time to start workin on the fr=abric.js features
+Now its time to start workin on the fabric.js features of the editor
 
+We first design the header component of the editor
 
 ***************************************************************************
+
+go to store and add new flag for is editing
+
+```js
+import { create } from "zustand"
+import { centerCanvas } from "@/fabric/fabric-utils"
+
+export const useEditorStore = create((set,get) => ({
+  canvas: null,
+  setCanvas: (canvas) => {
+    set({canvas});
+    if(canvas){
+      centerCanvas(canvas)
+    }
+  },
+  designId : null,
+  setDesignId : (id) => set({designId : id}),
+
+  // ********************************************************
+
+  isEditing : true,
+  setisEditing : (flag) => set({isEditing : flag}),
+  // ********************************************************
+
+  resetStore : () => {
+    set({
+      canvas: null,
+      designId : null
+      // setIsEditing to true when you reset store
+      isEditing: true
+     })
+  }
+}))
+```
+
 ***************************************************************************
+
+Now le's get the name of the editing design
+
+we will get the setName method from the store
+
+```js
+
+  // get the setName from the useEditorStore
+  const {canvas, setDesignId, resetStore, setName} = useEditorStore()
+
+  ....
+setName(design.name)
+```
+
 ***************************************************************************
+We want to start creating different shapes in the element panel
+
+We first need to create some utility methods
+
+we create a new file fabric/shapes/shape-definitions.js
+
+```js
+export const shapeDefinitions = {
+  rectangle: {
+    type: "rect",
+    label: "Rectangle",
+    defaultProps: {
+      width: 100,
+      height: 60,
+      fill: "#000000",
+    },
+    thumbnail: (fabric, canvas) => {
+      const { Rect } = fabric;
+      const rect = new Rect({
+        left: 15,
+        top: 35,
+        width: 70,
+        height: 35,
+        fill: "#000000",
+      });
+      canvas.add(rect);
+    },
+  }
+}
+```
 ***************************************************************************
 ***************************************************************************
 ***************************************************************************

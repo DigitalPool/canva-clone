@@ -12,10 +12,21 @@ export const useEditorStore = create((set,get) => ({
   designId : null,
   setDesignId : (id) => set({designId : id}),
 
+  isEditing : true,
+  setIsEditing : (flag) => set({isEditing : flag}),
+
+  name : 'Untitled Design',
+  setName : (value) => set({name : value}),
+
+
   resetStore : () => {
-      set({
+    set({
       canvas: null,
-      designId : null
+      designId : null,
+      // setIsEditing to true when you reset store
+      isEditing: true,
+      name : 'Untitled Design',
+
      })
   }
 }))

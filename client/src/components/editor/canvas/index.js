@@ -4,7 +4,7 @@ import { initializeFabric } from "@/fabric/fabric-utils"
 import { useEditorStore } from "@/store"
 import { useEffect, useRef } from "react"
 
-export default function canvas (){
+export default function Canvas (){
 
   //firstly we decalre all the things we need and set them to null reference
 
@@ -15,7 +15,7 @@ export default function canvas (){
   // we need one more ref that will allow us to know if we hae initiialized our canvas or not
   const initAttemptedRef = useRef(false)
 
-  const {setCanvas} = useEditorStore()
+  const { setCanvas } = useEditorStore()
 
   // now we take a useEffect
   // the first thing we will do is to cleanup the canvas
@@ -47,7 +47,7 @@ export default function canvas (){
     //Now we init out new canvas
 
     const initCanvas = async() => {
-        if(typeof window === undefined || !canvasRef.current || initAttemptedRef.current){
+        if(typeof window === "undefined" || !canvasRef.current || initAttemptedRef.current){
             return
         }
 

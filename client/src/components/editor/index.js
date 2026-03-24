@@ -18,7 +18,7 @@ export default function MainEditor() {
   const [error, setError] = useState(null)
 
   // set the design Id
-  const {canvas, setDesignId, resetStore} = useEditorStore()
+  const {canvas, setDesignId, resetStore, setName} = useEditorStore()
 
   //add UseEffect so all these methods can take effect
 
@@ -44,7 +44,7 @@ export default function MainEditor() {
     setError(null)
   }, [designId]) //it is based on the changing od designId
 
-  //it is possible that the desing is loaded and the canvas is not ready from the canvas
+  //it is possible that the Design is loaded and the canvas is not ready from the canvas
 
   useEffect(() => {
     if (isLoading && !canvas && designId){
@@ -86,7 +86,7 @@ export default function MainEditor() {
 
       if (design) {
         //TODO: update name
-        // setName(design.name);
+        setName(design.name);
 
         //set the design ID just incase we need it after getting the data
         setDesignId(designId);

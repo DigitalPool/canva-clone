@@ -13,7 +13,7 @@ export default function SideBar() {
 
             try{
                 const initialDesignData = {
-                    name: 'Untitled Desing - Youtube Thumbnail',
+                    name: 'Untitled Design - Youtube Thumbnail',
                     canvasData: null,
                     width: 825,
                     height: 7465,
