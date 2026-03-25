@@ -3,8 +3,12 @@ const cors = require('cors')
 const helmet = require('helmet')
 const mongoose = require('mongoose')
 const dotenv = require('dotenv')
+const path = require('path')
 
-dotenv.config()
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') })
+
+const mediaRoutes = require('./routes/upload-routes')
 
 const PORT = process.env.PORT || 5003
 const mongoURL = process.env.mongoURL
@@ -14,6 +18,7 @@ app.use(cors())
 app.use(helmet())
 app.use(express.json())
 app.use(express.urlencoded({extended : true}))
+app.use('/api/media', mediaRoutes)
 
 //database connection
 mongoose.connect(mongoURL)
@@ -23,6 +28,10 @@ mongoose.connect(mongoURL)
 //server connection
 async function startServer() {
     try {
+        if (!process.env.CLOUDINARY_API_KEY) {
+            console.warn('CLOUDINARY_API_KEY is missing. Check server/upload-service/.env loading.')
+        }
+
         app.listen(PORT, () =>{
             console.log(`UPLOAD service started on port ${PORT}`)
         })

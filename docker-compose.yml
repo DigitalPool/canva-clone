@@ -1,0 +1,97 @@
+name: canva-clone-2025
+
+services:
+  # mongo:
+  #   image: mongo:7
+  #   container_name: canva_mongo
+  #   restart: unless-stopped
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: root
+  #     MONGO_INITDB_ROOT_PASSWORD: rootpassword
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongo-data:/data/db
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD-SHELL",
+  #         "echo 'db.runCommand({ ping: 1 }).ok' | mongosh mongodb://$$MONGO_INITDB_ROOT_USERNAME:$$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/admin --quiet | grep 1",
+  #       ]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 20s
+
+  design-service:
+    build:
+      context: ./server/design-service
+      dockerfile: Dockerfile
+    container_name: canva_design_service
+    restart: unless-stopped
+    env_file:
+      - ./server/design-service/.env
+    # depends_on:
+    #   mongo:
+    #     condition: service_healthy
+    ports:
+      - "5001:5001"
+
+  upload-service:
+    build:
+      context: ./server/upload-service
+      dockerfile: Dockerfile
+    container_name: canva_upload_service
+    restart: unless-stopped
+    env_file:
+      - ./server/upload-service/.env
+    # depends_on:
+    #   mongo:
+    #     condition: service_healthy
+    ports:
+      - "5002:5002"
+
+  subscription-service:
+    build:
+      context: ./server/subscription-service
+      dockerfile: Dockerfile
+    container_name: canva_subscription_service
+    restart: unless-stopped
+    env_file:
+      - ./server/subscription-service/.env
+    # depends_on:
+    #   mongo:
+    #     condition: service_healthy
+    ports:
+      - "5003:5003"
+
+  api-gateway:
+    build:
+      context: ./server/api-gateway
+      dockerfile: Dockerfile
+    container_name: canva_api_gateway
+    restart: unless-stopped
+    env_file:
+      - ./server/api-gateway/.env
+    depends_on:
+      - design-service
+      - upload-service
+      - subscription-service
+    ports:
+      - "5500:5500"
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: canva_client
+    restart: unless-stopped
+    env_file:
+      - ./client/.env.local
+    depends_on:
+      - api-gateway
+    ports:
+      - "3000:3000"
+
+# volumes:
+  # mongo-data:

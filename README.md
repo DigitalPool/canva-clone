@@ -1,5 +1,53 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+## Docker Setup (All Services)
+
+This repository now includes:
+
+- A root [docker-compose.yml](docker-compose.yml) that runs:
+  - client (Next.js)
+  - api-gateway
+  - design-service
+  - upload-service
+  - subscription-service
+  - mongo
+- A root [Makefile](Makefile) with shortcuts for common Docker commands.
+
+### 1) Configure Environment
+
+Copy `.env.example` values into a new `.env` file at the project root and fill in required values:
+
+- `GOOGLE_CLIENT_ID`
+- `AUTH_SECRET`
+- `AUTH_GOOGLE_ID`
+- `AUTH_GOOGLE_SECRET`
+- Optional Cloudinary variables for upload service.
+
+### 2) Build and Start
+
+```bash
+make up-build
+```
+
+### 3) Common Commands
+
+```bash
+make up
+make down
+make logs
+make ps
+make clean
+```
+
+### 4) Service Endpoints
+
+- Client: http://localhost:3000
+- API Gateway: http://localhost:5500
+- Design Service: http://localhost:5001
+- Upload Service: http://localhost:5002
+- Subscription Service: http://localhost:5003
+- MongoDB: mongodb://root:rootpassword@localhost:27017/admin
+
 ## Getting Started
 
 First, run the development server:
@@ -2191,6 +2239,36 @@ export const shapeDefinitions = {
 }
 ```
 ***************************************************************************
+
+To store all the images, we will use Cloudinary and we will use stability AI for AI
+
+For the images, we go into
+
+uploads-service/src/models/media.js and we put our code for the databse there
+
+```js
+const mongoose = require("mongoose");
+
+//these are the schemas for the media which will be created and all it needs
+const mediaSchema = new mongoose.Schema({
+  userId: String,
+  name: String,
+  cloudinaryId: String,
+  url: String,
+  mimeType: String,
+  size: Number,
+  width: Number,
+  height: Number,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const Media = mongoose.models.Media || mongoose.model("Media", mediaSchema);
+module.exports = Media;
+
+```
 ***************************************************************************
 ***************************************************************************
 ***************************************************************************
@@ -2760,3 +2838,234 @@ false → if designId is null/undefined
 ****************************************************************************
 ****************************************************************************
 ****************************************************************************
+
+
+# Google OAuth Redirect URI Issue and Fix
+
+## Problem
+
+Google sign-in was failing with this error:
+
+Error 400: invalid_request
+You can't sign in to this app because it doesn't comply with Google's OAuth 2.0 policy.
+Request details:
+redirect_uri=http://0.0.0.0:3000/api/auth/callback/google
+
+The issue was that the application was generating the Google OAuth callback URL using:
+
+http://0.0.0.0:3000/api/auth/callback/google
+
+instead of:
+
+http://localhost:3000/api/auth/callback/google
+
+Google does not accept `0.0.0.0` as a valid OAuth redirect URI. It accepts `localhost` for local development, but not `0.0.0.0`.
+
+## Why It Happened
+
+The app was running in Docker, and the host was being inferred incorrectly during authentication.
+
+In local containerized development:
+
+* `0.0.0.0` is commonly used as a **bind address**
+* but it should **not** be used as the public OAuth callback host
+
+Auth.js / NextAuth was resolving the app URL to `0.0.0.0:3000`, which caused Google OAuth to reject the request.
+
+## Fix
+
+The issue was fixed by explicitly defining the correct canonical auth URL in the client environment file.
+
+Add these variables to:
+
+```text
+client/.env.local
+```
+
+```env
+NEXTAUTH_URL='http://localhost:3000'
+AUTH_URL='http://localhost:3000'
+AUTH_TRUST_HOST=true
+```
+
+---
+
+## What These Variables Do
+
+### `NEXTAUTH_URL='http://localhost:3000'`
+
+Tells NextAuth the correct base URL of the application in local development.
+
+### `AUTH_URL='http://localhost:3000'`
+
+Tells Auth.js the canonical application URL to use when generating callback and auth-related URLs.
+
+### `AUTH_TRUST_HOST=true`
+
+Allows Auth.js to trust the incoming host headers correctly, which is especially important when running behind Docker, proxies, or reverse proxies.
+
+---
+
+## Google Cloud Console Configuration
+
+In the Google OAuth client settings, the correct redirect URI must also be registered:
+
+```text
+http://localhost:3000/api/auth/callback/google
+```
+
+Do **not** use:
+
+```text
+http://0.0.0.0:3000/api/auth/callback/google
+```
+
+because Google will reject it.
+
+---
+
+## Result
+
+After adding:
+
+```env
+NEXTAUTH_URL='http://localhost:3000'
+AUTH_URL='http://localhost:3000'
+AUTH_TRUST_HOST=true
+```
+
+and ensuring the Google OAuth redirect URI matched `localhost`, Google sign-in worked correctly.
+
+---
+
+## Summary
+
+### Cause
+
+Auth.js / NextAuth generated the OAuth callback URL with `0.0.0.0` instead of `localhost`.
+
+### Effect
+
+Google rejected the OAuth request with `Error 400: invalid_request`.
+
+### Solution
+
+Explicitly set the auth base URL and trust host settings in `client/.env.local`:
+
+```env
+NEXTAUTH_URL='http://localhost:3000'
+AUTH_URL='http://localhost:3000'
+AUTH_TRUST_HOST=true
+```
+
+and register the correct redirect URI in Google Cloud Console:
+
+```text
+http://localhost:3000/api/auth/callback/google
+```
+
+
+
+
+******************************************************************
+
+# What I Learned: Docker, MongoDB Atlas & Mongoose
+
+## 1. Connecting Docker Services to MongoDB Atlas
+
+Docker containers have full outbound internet access by default, so connecting to Atlas works just like any other external service. The two requirements are:
+
+- A valid `mongodb+srv://` connection string in your `.env` file
+- Your public IP whitelisted in **Atlas → Security → Network Access**
+
+```dotenv
+mongoURL=mongodb+srv://user:pass@cluster0.xxxxx.mongodb.net/mydb?retryWrites=true&w=majority
+```
+
+---
+
+## 2. Docker Inter-Container Networking
+
+Containers **cannot use `localhost`** to talk to each other. Inside a container, `localhost` refers to that container itself — not other services.
+
+Use the **Docker Compose service name** as the hostname instead:
+
+```
+# ❌ Wrong - api-gateway trying to reach design-service
+DESIGN_SERVICE_URL=http://localhost:5001
+
+# ✅ Correct - uses Docker's internal DNS
+DESIGN_SERVICE_URL=http://design-service:5001
+```
+
+Docker Compose automatically creates an internal DNS so every service is reachable by its name as defined in `docker-compose.yml`.
+
+```
+Browser → localhost:5500 (api-gateway)
+               ↓
+        design-service:5001  ✅
+        NOT localhost:5001   ❌
+```
+
+---
+
+## 3. MongoDB Default Database: `test`
+
+When no database name is specified in the connection URI, MongoDB **silently defaults to a database called `test`**.
+
+```
+mongodb+srv://user:pass@cluster.mongodb.net/          → uses "test"
+mongodb+srv://user:pass@cluster.mongodb.net/myapp     → uses "myapp"
+```
+
+This means data from multiple projects can end up mixed together in the `test` database if no name is specified. Always be explicit:
+
+```dotenv
+# ❌ No database name - goes to "test"
+mongoURL=mongodb+srv://user:pass@cluster0.mongodb.net/
+
+# ✅ Explicit database name
+mongoURL=mongodb+srv://user:pass@cluster0.mongodb.net/design-service
+```
+
+> **Note:** The name `test` is a leftover convention from old MongoDB shell defaults. It was never intended for production data.
+
+---
+
+## 4. How Mongoose Names Collections Automatically
+
+Mongoose maps your model name to a collection name automatically:
+
+1. Takes the model name (e.g. `'Design'`)
+2. Lowercases it → `design`
+3. Pluralizes it → `designs`
+4. Creates that collection in whichever database you're connected to
+
+```javascript
+mongoose.model('Design', designSchema)      // → designs collection
+mongoose.model('User', userSchema)          // → users collection
+mongoose.model('Order', orderSchema)        // → orders collection
+```
+
+You don't need to manually create collections — Mongoose does it on first write.
+
+---
+
+## 5. Why Old Designs Disappeared After Switching to Docker
+
+| Stage | Connection String | Database Used | Where Data Went |
+|---|---|---|---|
+| Local dev (no Docker) | `.../` (no DB name) | `test` | `test.designs` |
+| Docker (fixed URI) | `.../design-service` | `design-service` | `design-service.designs` |
+
+The data wasn't lost — it was in a different database. Fixing the URI to match where the data lives restores it.
+
+---
+
+## Key Takeaways
+
+- Always specify a **database name** in your MongoDB URI
+- Docker services talk to each other using **service names**, not `localhost`
+- MongoDB's `test` database is a catch-all default — avoid relying on it
+- Mongoose **auto-creates collections** from your model name (lowercased + pluralized)
+- Your Docker setup with explicit database names per service is **best practice**

@@ -20,7 +20,7 @@ export default function Banner() {
                 name: 'Untitled Design - Youtube Thumbnail',
                 canvasData: null,
                 width: 825,
-                height: 7465,
+                height: 465,
                 category: 'youtube_thumbnail'
             }
 

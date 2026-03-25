@@ -106,9 +106,12 @@ export const addTextToCanvas = async (
   try {
     const { IText } = await import("fabric");
 
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
     const defaultProps = {
-      left: 100,
-      top: 100,
+      left: centerX - 50,
+      top: centerY - 25,
       fontSize: 24,
       fontFamily: "Arial",
       fill: "#000000",
@@ -142,13 +145,16 @@ export const addImageToCanvas = async (canvas, imageUrl) => {
     imgObj.crossOrigin = "Anonymous";
     imgObj.src = imageUrl;
 
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
     return new Promise((resolve, reject) => {
       imgObj.onload = () => {
         let image = new FabricImage(imgObj);
         image.set({
           id: `image-${Date.now()}`,
-          top: 100,
-          left: 100,
+          top: centerY - 100,
+          left: centerX - 100,
           padding: 10,
           cornorSize: 10,
         });
@@ -206,15 +212,38 @@ export const toggleDrawingMode = (
 export const toggleEraseMode = (
   canvas,
   isErasing,
-  previousColor = "#000000",
-  eraserWidth = 20
+  previousColor ,
+  eraserWidth = 20,
+  canvasBackgroundColor
 ) => {
   if (!canvas || !canvas.freeDrawingBrush) return false;
 
   try {
     if (isErasing) {
-      canvas.freeDrawingBrush.color = "#ffffff";
+      const currentCanvasBackgroundColor =
+        canvas.get?.("backgroundColor") ||
+        canvas.backgroundColor ||
+        canvasBackgroundColor ||
+        "#ffffff";
+
+      canvas.freeDrawingBrush.color =
+        typeof currentCanvasBackgroundColor === "string"
+          ? currentCanvasBackgroundColor
+          : "#ffffff";
       canvas.freeDrawingBrush.width = eraserWidth;
+
+
+      canvas.getActiveObject().set({
+        selectable: false, // Cannot be selected
+        evented: false,    // Does not react to mouse events (clicks/hover)
+        lockMovementX: true,
+        lockMovementY: true,
+        lockRotation: true,
+        lockScalingX: true,
+        lockScalingY: true
+      });
+
+
     } else {
       canvas.freeDrawingBrush.color = previousColor;
       canvas.freeDrawingBrush.width = 5;

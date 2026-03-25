@@ -50,6 +50,14 @@ const proxyOptions = {
     )     
 }
 
+const uploadProxyOptions = {
+    ...proxyOptions,
+    parseReqBody: false,
+    proxyReqPathResolver: (req) => {
+        return req.originalUrl.replace(/^\/v1\/(?:media|upload)/, "/api/media")
+    },
+}
+
 //Design Service
 app.use('/v1/designs',
     authMiddleware,
@@ -58,14 +66,16 @@ app.use('/v1/designs',
     })
 )
 
-//Upload Service
-
-app.use('/v1/upload', 
+// Upload Service
+// Support both legacy `/v1/upload/*` and current `/v1/media/*` client paths.
+app.use('/v1/media',
     authMiddleware,
-    proxy(process.env.UPLOAD, {
-        ...proxyOptions,
-        parseReqBody: false,
-    })
+    proxy(process.env.UPLOAD, uploadProxyOptions)
+)
+
+app.use('/v1/upload',
+    authMiddleware,
+    proxy(process.env.UPLOAD, uploadProxyOptions)
 )
 
 //subscription Service

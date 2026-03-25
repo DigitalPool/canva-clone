@@ -152,6 +152,8 @@ export const brushSizes = [
   { value: 5, label: "Medium" },
   { value: 10, label: "Large" },
   { value: 20, label: "Extra Large" },
+  { value: 30, label: "Maxi Large" },
+  { value: 50, label: "XX Large" },
 ];
 
 export const drawingPanelColorPresets = [
