@@ -12,8 +12,11 @@ exports.getUserDesigns = async (req, res) => {
     //return res.status 200, success as true
   try {
     const userId = req.user.userId
-    // const designs = (await Design.find({userId})).sort({updatedAt: -1})
-    const designs = (await Design.find({userId})).sort()
+    const designs = await Design.find({ userId }).sort({
+        updatedAt: -1,
+        createdAt: -1,
+        _id: -1,
+    })
     res.status(200).json({
         success: true,
         data: designs
@@ -139,21 +142,21 @@ exports.deleteDesign = async (req, res) => {
     // const design = await Design.findOne({_id: designId, userID})
     // if deisng is not found or no permission, return error 404
 
-    const userId = req.user.id
+    const userId = req.user.userId
     const designId = req.params.id
 
-    const design = Design.findOne({_id : designId, userId})
+    const design = await Design.findOne({ _id: designId, userId })
     if (!design){
-        res.status(404).json({
+        return res.status(404).json({
             success: false,
             message: 'cant find requested file to delete'
         })
     }
 
-    Design.deleteOne({_id: designId})
+    await Design.deleteOne({ _id: designId, userId })
 
-    res.status(404).json({
-            success: success,
+    res.status(200).json({
+            success: true,
             message: 'design deleted successfully'
         })
     
@@ -161,7 +164,7 @@ exports.deleteDesign = async (req, res) => {
     //if design found and can delete, Design.deleteOne({id: designId})
     // return res.status 200, success as true with message: deleted successfully
 
-  } catch (e){
+  } catch (error){
     console.log(`Error while deleting design: ${error}`)
     //res.status...
     res.status(500).json({

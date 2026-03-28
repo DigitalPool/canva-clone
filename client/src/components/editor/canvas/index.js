@@ -1,99 +1,110 @@
-"use client"
+"use client";
 
-import { initializeFabric } from "@/fabric/fabric-utils"
-import { useEditorStore } from "@/store"
-import { useEffect, useRef } from "react"
+import { customizeBoundingBox, initializeFabric } from "@/fabric/fabric-utils";
+import { useEditorStore } from "@/store";
+import { useEffect, useRef } from "react";
 
-export default function Canvas (){
+function Canvas() {
+  const canvasRef = useRef(null);
+  const canvasContainerRef = useRef(null);
+  const fabricCanvasRef = useRef(null);
+  const initAttemptedRef = useRef(false);
 
-  //firstly we decalre all the things we need and set them to null reference
+  const { setCanvas, markAsModified } = useEditorStore();
 
-  const canvasRef = useRef(null)
-  const canvasContainerRef = useRef(null)
-  const fabricCanvasRef = useRef(null)
-
-  // we need one more ref that will allow us to know if we hae initiialized our canvas or not
-  const initAttemptedRef = useRef(false)
-
-  const { setCanvas } = useEditorStore()
-
-  // now we take a useEffect
-  // the first thing we will do is to cleanup the canvas
-
-  useEffect(() =>{
-    //cleanUp the canvas
-    
+  useEffect(() => {
     const cleanUpCanvas = () => {
-      // check if there is a current fabric where we are, so we cna dispose it
-
-      if (fabricCanvasRef.current){
-        try{
-          fabricCanvasRef.current.dispose()
-        } catch (e){
-          console.error('error disposing Canvas', e)
-        }
-
-        fabricCanvasRef.current = null
-        // remember to set the canvas to null also
-        setCanvas(null)
-      }
-    }
-
-    //call the clean up function
-    cleanUpCanvas()
-    //reseet the init flah
-    initAttemptedRef.current = false
-  
-    //Now we init out new canvas
-
-    const initCanvas = async() => {
-        if(typeof window === "undefined" || !canvasRef.current || initAttemptedRef.current){
-            return
-        }
-
-        initAttemptedRef.current = true
-
-        try{
-        // the fabric/design itself has its own canvas
-        const fabricCanvas = await initializeFabric(canvasRef.current, canvasContainerRef.current)
-
-        if(!fabricCanvas){
-            console.error('failed to initializa fabric.js canvas')
-
-            return
-        }
-
-        //otherwise, it means that the initialization worked
-        fabricCanvasRef.current = fabricCanvas
-        setCanvas(fabricCanvas)
-
-        console.log('Canvas init is done and set in store')
-
-        //TODO: apply custom styled for the controls
-        //TODO: set up event listeniers
+      if (fabricCanvasRef.current) {
+        try {
+          fabricCanvasRef.current.off("object:added");
+          fabricCanvasRef.current.off("object:modified");
+          fabricCanvasRef.current.off("object:removed");
+          fabricCanvasRef.current.off("path:created");
         } catch (e) {
-        console.error('failed to init canvas', e )
+          console.error("Error removing event listeners", e);
         }
-    }
+
+        try {
+          fabricCanvasRef.current.dispose();
+        } catch (e) {
+          console.error("Error disposing canvas", e);
+        }
+
+        fabricCanvasRef.current = null;
+        setCanvas(null);
+      }
+    };
+
+    cleanUpCanvas();
+
+    //reset init flag
+    initAttemptedRef.current = false;
+
+    //init our canvas
+    const initcanvas = async () => {
+      if (
+        typeof window === undefined ||
+        !canvasRef.current ||
+        initAttemptedRef.current
+      ) {
+        return;
+      }
+
+      initAttemptedRef.current = true;
+
+      try {
+        const fabricCanvas = await initializeFabric(
+          canvasRef.current,
+          canvasContainerRef.current
+        );
+
+        if (!fabricCanvas) {
+          console.error("Failed to initialize Fabric.js canvas");
+
+          return;
+        }
+
+        fabricCanvasRef.current = fabricCanvas;
+        //set the canvas in store
+        setCanvas(fabricCanvas);
+
+        console.log("Canvas init is done and set in store");
+
+        //apply custom style for the controls
+        customizeBoundingBox(fabricCanvas);
+
+        //set up event listeners
+        const handleCanvasChange = () => {
+          markAsModified();
+        };
+
+        fabricCanvas.on("object:added", handleCanvasChange);
+        fabricCanvas.on("object:modified", handleCanvasChange);
+        fabricCanvas.on("object:removed", handleCanvasChange);
+        fabricCanvas.on("path:created", handleCanvasChange);
+      } catch (e) {
+        console.error("Failed to init canvas", e);
+      }
+    };
+
     const timer = setTimeout(() => {
-      initCanvas();
+      initcanvas();
     }, 50);
 
     return () => {
       clearTimeout(timer);
       cleanUpCanvas();
     };
-
-  }, [])
-
+  }, []);
 
   return (
     <div
-      className="relative w-full h-[600px] overflow-auto"
+      className="relative w-full h-[600px] overflow-hidden"
       ref={canvasContainerRef}
     >
       <canvas ref={canvasRef} />
     </div>
   );
-  
 }
+
+export default Canvas;

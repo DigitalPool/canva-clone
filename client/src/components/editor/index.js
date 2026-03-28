@@ -7,6 +7,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useEditorStore } from "@/store";
 import { getUserDesignById } from "@/services/design-service";
+import Properties from "./properties";
+import SubscriptionModal from "../subscription/premium-modal";
 
 export default function MainEditor() {
   const params = useParams()
@@ -18,7 +20,7 @@ export default function MainEditor() {
   const [error, setError] = useState(null)
 
   // set the design Id
-  const {canvas, setDesignId, resetStore, setName} = useEditorStore()
+  const {canvas, setDesignId, resetStore, setName, setShowProperties, showProperties, isEditing, showPremiumModal, setShowPremiumModal} = useEditorStore()
 
   //add UseEffect so all these methods can take effect
 
@@ -64,10 +66,6 @@ export default function MainEditor() {
     console.log('Canvas is now available in editor')
    }
   }, [canvas]) //it is based on the changing od designId
-
-
-  // Now here we have to load the design and render it on the canvas, so we will create a function called loadDesign which will take the designId and canvas as parameters and will return a promise, we will call this function inside a useEffect which will be based on the designId and canvas, so anytime the designId or canvas changes we will call this function, and inside this function we will make an API call to get the design data and then we will use the fabric.js methods to render the design on the canvas, if there is an error we will set the error state and if it is successful we will set the isLoading to false
-
 
     // Now here we have to load the design and render it
   const loadDesign = useCallback(async () => {
@@ -176,17 +174,52 @@ export default function MainEditor() {
     }
   }, [canvas, designId, loadDesign, loadAttempted, router]); // all what we need
 
- 
 
-  return <div className="flex flex-col h-screen overflow-hidden">
-    <Header/>
-    <div className="flex flex-1 overflow-hidden">
-      <Sidebar/>
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        <main className="flex-1 overflow-hidden bg-[#f0f0f0] flex items-center justify-center" >
-          <Canvas/>
-        </main>
+   useEffect(() => {
+    if (!canvas) return;
+
+    const handleSelectionCreated = () => {
+      const activeObject = canvas.getActiveObject();
+
+      console.log(activeObject, "activeObject");
+
+      if (activeObject) {
+        setShowProperties(true);
+      }
+    };
+
+    const handleSelectionCleared = () => {
+      setShowProperties(false);
+    };
+
+    canvas.on("selection:created", handleSelectionCreated);
+    canvas.on("selection:updated", handleSelectionCreated);
+    canvas.on("selection:cleared", handleSelectionCleared);
+
+    return () => {
+      canvas.off("selection:created", handleSelectionCreated);
+      canvas.off("selection:updated", handleSelectionCreated);
+      canvas.off("selection:cleared", handleSelectionCleared);
+    };
+  }, [canvas]);
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden">
+      <Header />
+      <div className="flex flex-1 overflow-hidden">
+        {isEditing && <Sidebar />}
+
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          <main className="flex-1 overflow-hidden bg-[#f0f0f0] flex items-center justify-center">
+            <Canvas />
+          </main>
+        </div>
       </div>
+      {showProperties && isEditing && <Properties />}
+      <SubscriptionModal
+        isOpen={showPremiumModal}
+        onClose={setShowPremiumModal}
+      /> 
     </div>
-</div>
+  );
 }

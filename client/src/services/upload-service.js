@@ -47,13 +47,14 @@ export async function uploadFileWithAuth(file, metaData = {}) {
 
 export async function generateImageFromAI(prompt) {
   try {
+    console.log("Generating image with AI enters generateImageFromAI function");
     const response = await fetchWithAuth("/v1/media/ai-image-generate", {
       method: "POST",
       body: {
         prompt,
       },
     });
-
+    console.log("Generating image with AI from generateImageFromAI upload service");
     return response;
   } catch (e) {
     throw new Error(e.message);

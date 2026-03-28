@@ -58,6 +58,14 @@ const uploadProxyOptions = {
     },
 }
 
+const mediaJsonProxyOptions = {
+    ...proxyOptions,
+    parseReqBody: true,
+    proxyReqPathResolver: (req) => {
+        return req.originalUrl.replace(/^\/v1\/media/, "/api/media")
+    },
+}
+
 //Design Service
 app.use('/v1/designs',
     authMiddleware,
@@ -67,6 +75,12 @@ app.use('/v1/designs',
 )
 
 // Upload Service
+// AI generation posts JSON, so it needs normal body parsing instead of raw upload streaming.
+app.use('/v1/media/ai-image-generate',
+    authMiddleware,
+    proxy(process.env.UPLOAD, mediaJsonProxyOptions)
+)
+
 // Support both legacy `/v1/upload/*` and current `/v1/media/*` client paths.
 app.use('/v1/media',
     authMiddleware,

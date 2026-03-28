@@ -4,9 +4,9 @@ const {
   uploadMedia,
   getAllMediasByUser,
 } = require("../controllers/upload-controller");
-// const {
-//   generateImageFromAIAndUploadToDB,
-// } = require("../controllers/ai-image-controller");
+const {
+  generateImageFromAIAndUploadToDB,
+} = require("../controllers/ai-image-controller");
 const authenticatedRequest = require("../middleware/auth-middleware");
 
 const router = express.Router();
@@ -48,10 +48,27 @@ router.post(
 );
 
 router.get("/get", authenticatedRequest, getAllMediasByUser);
+// router.post(
+//   "/ai-image-generate",
+//   authenticatedRequest,
+//   generateImageFromAIAndUploadToDB
+// );
+
 router.post(
-  "/ai-image-generate",
-  authenticatedRequest,
-  // generateImageFromAIAndUploadToDB
+	"/ai-image-generate",
+	(req, res, next) => {
+		console.log("[ai route] matched");
+		console.log("[ai route] body:", req.body);
+		console.log("[ai route] auth header:", req.headers.authorization);
+		next();
+	},
+	authenticatedRequest,
+	(req, res, next) => {
+		console.log("[ai route] passed auth");
+		console.log("[ai route] req.user:", req.user);
+		next();
+	},
+	generateImageFromAIAndUploadToDB
 );
 
 module.exports = router;

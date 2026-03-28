@@ -1,35 +1,35 @@
-const express = require('express');
-const cors = require('cors')
-const helmet = require('helmet')
-const mongoose = require('mongoose')
-const dotenv = require('dotenv')
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const helmet = require("helmet");
+const subscriptionRoutes = require("./routes/subscription-routes");
 
-dotenv.config()
+const app = express();
+const PORT = process.env.PORT || 5003;
+const mongoURL = process.env.mongoURL;
 
-const PORT = process.env.PORT || 5003
-const mongoURL = process.env.mongoURL
-const app = express()
+mongoose
+  .connect(mongoURL)
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((error) => console.log("MongoDB Error", error));
 
-app.use(cors())
-app.use(helmet())
-app.use(express.json())
-app.use(express.urlencoded({extended : true}))
+app.use(cors());
+app.use(helmet());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-//database connection
-mongoose.connect(mongoURL)
-.then(()=> console.log('connected to MongoDb'))
-.catch((error) => console.log(`Error connecting to MongoDb: ${error}`))
+app.use("/api/subscription", subscriptionRoutes);
 
-//server connection
 async function startServer() {
-    try {
-        app.listen(PORT, () =>{
-            console.log(`SUBSCRIPTION service started on port ${PORT}`)
-        })
-    } catch (error) {
-        console.log('error starting server: ', error)
-        process.exit(1)
-    }
+  try {
+    app.listen(PORT, () =>
+      console.log(`SUBSCRIPTION Service running on port ${PORT}`)
+    );
+  } catch (error) {
+    console.error("Failed to connected to server", error);
+    process.exit(1);
+  }
 }
 
-startServer()
+startServer();
